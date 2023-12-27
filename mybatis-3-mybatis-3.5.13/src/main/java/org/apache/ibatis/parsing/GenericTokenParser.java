@@ -20,68 +20,78 @@ package org.apache.ibatis.parsing;
  */
 public class GenericTokenParser {
 
-  private final String openToken;
-  private final String closeToken;
-  private final TokenHandler handler;
+    //    占位符开始标记
+    private final String openToken;
+    //    占位符结束标记
+    private final String closeToken;
+//    TokenHandler接口会按一定的业务逻辑解析占位符
+    private final TokenHandler handler;
 
-  public GenericTokenParser(String openToken, String closeToken, TokenHandler handler) {
-    this.openToken = openToken;
-    this.closeToken = closeToken;
-    this.handler = handler;
-  }
+    public GenericTokenParser(String openToken, String closeToken, TokenHandler handler) {
+        this.openToken = openToken;
+        this.closeToken = closeToken;
+        this.handler = handler;
+    }
 
-  public String parse(String text) {
-    if (text == null || text.isEmpty()) {
-      return "";
-    }
-    // search open token
-    int start = text.indexOf(openToken);
-    if (start == -1) {
-      return text;
-    }
-    char[] src = text.toCharArray();
-    int offset = 0;
-    final StringBuilder builder = new StringBuilder();
-    StringBuilder expression = null;
-    do {
-      if (start > 0 && src[start - 1] == '\\') {
-        // this open token is escaped. remove the backslash and continue.
-        builder.append(src, offset, start - offset - 1).append(openToken);
-        offset = start + openToken.length();
-      } else {
-        // found open token. let's search close token.
-        if (expression == null) {
-          expression = new StringBuilder();
-        } else {
-          expression.setLength(0);
+//    处理占位符逻辑
+    public String parse(String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
         }
-        builder.append(src, offset, start - offset);
-        offset = start + openToken.length();
-        int end = text.indexOf(closeToken, offset);
-        while (end > -1) {
-          if ((end <= offset) || (src[end - 1] != '\\')) {
-            expression.append(src, offset, end - offset);
-            break;
-          }
-          // this close token is escaped. remove the backslash and continue.
-          expression.append(src, offset, end - offset - 1).append(closeToken);
-          offset = end + closeToken.length();
-          end = text.indexOf(closeToken, offset);
+        // 取到占位符起始标记的位置
+        int start = text.indexOf(openToken);
+//        如果没找到直接返回，说明没有占位符
+        if (start == -1) {
+            return text;
         }
-        if (end == -1) {
-          // close token was not found.
-          builder.append(src, start, src.length - start);
-          offset = src.length;
-        } else {
-          builder.append(handler.handleToken(expression.toString()));
-          offset = end + closeToken.length();
+        char[] src = text.toCharArray();
+        int offset = 0;
+//        用来记录解析后的字符串
+        final StringBuilder builder = new StringBuilder();
+        StringBuilder expression = null;
+        do {
+            if (start > 0 && src[start - 1] == '\\') {
+//                开始标记已经转义，于是遇到转义符开始记录，直接将前面的字符集以及开始标记追加到后面
+                builder.append(src, offset, start - offset - 1).append(openToken);
+                offset = start + openToken.length();
+            } else {
+//                已经找到了开始标记，然后现在找结束标记
+                // found open token. let's search close token.
+                if (expression == null) {
+                    expression = new StringBuilder();
+                } else {
+                    expression.setLength(0);
+                }
+                builder.append(src, offset, start - offset);
+                offset = start + openToken.length();
+                int end = text.indexOf(closeToken, offset);
+//                如果找到了结束标记
+                while (end > -1) {
+//                    追加结束标记前面的字符串
+                    if ((end <= offset) || (src[end - 1] != '\\')) {
+                        expression.append(src, offset, end - offset);
+                        break;
+                    }
+//                    结束标记已经转义，于是遇到转义符开始记录，直接将前面的字符集以及开始标记追加到后面
+                    expression.append(src, offset, end - offset - 1).append(closeToken);
+                    offset = end + closeToken.length();
+                    end = text.indexOf(closeToken, offset);
+                }
+                if (end == -1) {
+                    // close token was not found.
+                    builder.append(src, start, src.length - start);
+                    offset = src.length;
+                } else {
+//                    拼出来完整内容
+                    builder.append(handler.handleToken(expression.toString()));
+                    offset = end + closeToken.length();
+                }
+            }
+            start = text.indexOf(openToken, offset);
+        } while (start > -1);
+        if (offset < src.length) {
+            builder.append(src, offset, src.length - offset);
         }
-      }
-      start = text.indexOf(openToken, offset);
-    } while (start > -1);
-    if (offset < src.length) {
-      builder.append(src, offset, src.length - offset);
+        return builder.toString();
     }
-    return builder.toString();
-  }
 }

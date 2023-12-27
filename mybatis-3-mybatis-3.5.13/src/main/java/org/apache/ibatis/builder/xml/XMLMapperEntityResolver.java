@@ -31,59 +31,51 @@ import org.xml.sax.SAXException;
  * @author Eduardo Macarron
  */
 public class XMLMapperEntityResolver implements EntityResolver {
+    //指定mybatis-config.xm文件和映射问题对应的DTD的SystemId
+    private static final String IBATIS_CONFIG_SYSTEM = "ibatis-3-config.dtd";
+    private static final String IBATIS_MAPPER_SYSTEM = "ibatis-3-mapper.dtd";
+    private static final String MYBATIS_CONFIG_SYSTEM = "mybatis-3-config.dtd";
+    private static final String MYBATIS_MAPPER_SYSTEM = "mybatis-3-mapper.dtd";
+    //指定对应DTD文件的具体位置
+    private static final String MYBATIS_CONFIG_DTD = "org/apache/ibatis/builder/xml/mybatis-3-config.dtd";
+    private static final String MYBATIS_MAPPER_DTD = "org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd";
 
-  private static final String IBATIS_CONFIG_SYSTEM = "ibatis-3-config.dtd";
-  private static final String IBATIS_MAPPER_SYSTEM = "ibatis-3-mapper.dtd";
-  private static final String MYBATIS_CONFIG_SYSTEM = "mybatis-3-config.dtd";
-  private static final String MYBATIS_MAPPER_SYSTEM = "mybatis-3-mapper.dtd";
-
-  private static final String MYBATIS_CONFIG_DTD = "org/apache/ibatis/builder/xml/mybatis-3-config.dtd";
-  private static final String MYBATIS_MAPPER_DTD = "org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd";
-
-  /**
-   * Converts a public DTD into a local one.
-   *
-   * @param publicId
-   *          The public id that is what comes after "PUBLIC"
-   * @param systemId
-   *          The system id that is what comes after the public id.
-   *
-   * @return The InputSource for the DTD
-   *
-   * @throws org.xml.sax.SAXException
-   *           If anything goes wrong
-   */
-  @Override
-  public InputSource resolveEntity(String publicId, String systemId) throws SAXException {
-    try {
-      if (systemId != null) {
-        String lowerCaseSystemId = systemId.toLowerCase(Locale.ENGLISH);
-        if (lowerCaseSystemId.contains(MYBATIS_CONFIG_SYSTEM) || lowerCaseSystemId.contains(IBATIS_CONFIG_SYSTEM)) {
-          return getInputSource(MYBATIS_CONFIG_DTD, publicId, systemId);
-        }
-        if (lowerCaseSystemId.contains(MYBATIS_MAPPER_SYSTEM) || lowerCaseSystemId.contains(IBATIS_MAPPER_SYSTEM)) {
-          return getInputSource(MYBATIS_MAPPER_DTD, publicId, systemId);
-        }
-      }
-      return null;
-    } catch (Exception e) {
-      throw new SAXException(e.toString());
+    public XMLMapperEntityResolver() {
     }
-  }
 
-  private InputSource getInputSource(String path, String publicId, String systemId) {
-    InputSource source = null;
-    if (path != null) {
-      try {
-        InputStream in = Resources.getResourceAsStream(path);
-        source = new InputSource(in);
-        source.setPublicId(publicId);
-        source.setSystemId(systemId);
-      } catch (IOException e) {
-        // ignore, null is ok
-      }
+    //resolveEntity()方法是EntityResolver中实现的方法，实现如下
+    public InputSource resolveEntity(String publicId, String systemId) throws SAXException {
+        try {
+            if (systemId != null) {
+                String lowerCaseSystemId = systemId.toLowerCase(Locale.ENGLISH);
+                if (lowerCaseSystemId.contains("mybatis-3-config.dtd") || lowerCaseSystemId.contains("ibatis-3-config.dtd")) {
+                    return this.getInputSource("org/apache/ibatis/builder/xml/mybatis-3-config.dtd", publicId, systemId);
+                }
+
+                if (lowerCaseSystemId.contains("mybatis-3-mapper.dtd") || lowerCaseSystemId.contains("ibatis-3-mapper.dtd")) {
+                    return this.getInputSource("org/apache/ibatis/builder/xml/mybatis-3-mapper.dtd", publicId, systemId);
+                }
+            }
+
+            return null;
+        } catch (Exception var4) {
+            throw new SAXException(var4.toString());
+        }
     }
-    return source;
-  }
 
+    // 通过公开Id和系统Id去对应的映射路径里面拿到对应的DTD文件流
+    private InputSource getInputSource(String path, String publicId, String systemId) {
+        InputSource source = null;
+        if (path != null) {
+            try {
+                InputStream in = Resources.getResourceAsStream(path);
+                source = new InputSource(in);
+                source.setPublicId(publicId);
+                source.setSystemId(systemId);
+            } catch (IOException var6) {
+            }
+        }
+
+        return source;
+    }
 }
