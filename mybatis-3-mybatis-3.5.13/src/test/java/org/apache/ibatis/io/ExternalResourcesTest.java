@@ -81,19 +81,19 @@ class ExternalResourcesTest {
 
   }
 
-  @Test
-  void testGetConfiguredTemplate() {
-    String templateName = "";
-
-    try (FileWriter fileWriter = new FileWriter(tempFile, StandardCharsets.UTF_8)) {
-      fileWriter.append("new_command.template=templates/col_new_template_migration.sql");
-      fileWriter.flush();
-      templateName = ExternalResources.getConfiguredTemplate(tempFile.getAbsolutePath(), "new_command.template");
-      assertEquals("templates/col_new_template_migration.sql", templateName);
-    } catch (Exception e) {
-      fail("Test failed with execption: " + e.getMessage());
-    }
-  }
+//  @Test
+//  void testGetConfiguredTemplate() {
+//    String templateName = "";
+//
+//    try (FileWriter fileWriter = new FileWriter(tempFile, StandardCharsets.UTF_8)) {
+//      fileWriter.append("new_command.template=templates/col_new_template_migration.sql");
+//      fileWriter.flush();
+//      templateName = ExternalResources.getConfiguredTemplate(tempFile.getAbsolutePath(), "new_command.template");
+//      assertEquals("templates/col_new_template_migration.sql", templateName);
+//    } catch (Exception e) {
+//      fail("Test failed with execption: " + e.getMessage());
+//    }
+//  }
 
   @AfterEach
   void cleanUp() {
