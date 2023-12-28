@@ -371,6 +371,13 @@ class TypeParameterResolverTest {
     assertEquals(Object.class, result);
   }
 
+  /**
+  *@Param:
+  *@return:
+  *@Author: qjj
+  *@describe: 测试resolveFieldType方法
+   * resolveFieldType方法的功能类似于，字段属性在执行期间的具体类型
+  */
   @Test
   void testField_GenericField() throws Exception {
     Class<?> clazz = SubCalculator.class;

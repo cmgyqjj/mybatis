@@ -42,6 +42,7 @@ public class DefaultReflectorFactory implements ReflectorFactory {
         if (classCacheEnabled) {
 //            换成了ConcurrentHashMap，所以去掉了 synchronized 是吧
             // synchronized (type) removed see issue #461
+//            放到reflectorMap里面缓存，现在写的这么高级吗，都直接匿名函数创建对象了
             return MapUtil.computeIfAbsent(reflectorMap, type, Reflector::new);
         }
         return new Reflector(type);
