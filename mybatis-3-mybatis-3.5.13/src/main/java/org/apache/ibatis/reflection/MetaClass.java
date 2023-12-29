@@ -31,162 +31,171 @@ import org.apache.ibatis.reflection.property.PropertyTokenizer;
  */
 public class MetaClass {
 
-  private final ReflectorFactory reflectorFactory;
-  private final Reflector reflector;
+//    reflectorFactory对象用于缓存Reflector对象
+    private final ReflectorFactory reflectorFactory;
+//    用于记录当前MetaClass所对应的类
+    private final Reflector reflector;
 
-  private MetaClass(Class<?> type, ReflectorFactory reflectorFactory) {
-    this.reflectorFactory = reflectorFactory;
-    this.reflector = reflectorFactory.findForClass(type);
-  }
-
-  public static MetaClass forClass(Class<?> type, ReflectorFactory reflectorFactory) {
-    return new MetaClass(type, reflectorFactory);
-  }
-
-  public MetaClass metaClassForProperty(String name) {
-    Class<?> propType = reflector.getGetterType(name);
-    return MetaClass.forClass(propType, reflectorFactory);
-  }
-
-  public String findProperty(String name) {
-    StringBuilder prop = buildProperty(name, new StringBuilder());
-    return prop.length() > 0 ? prop.toString() : null;
-  }
-
-  public String findProperty(String name, boolean useCamelCaseMapping) {
-    if (useCamelCaseMapping) {
-      name = name.replace("_", "");
+    private MetaClass(Class<?> type, ReflectorFactory reflectorFactory) {
+//        初始化reflectorFactory和reflector属性
+        this.reflectorFactory = reflectorFactory;
+//        这里在上面介绍过，创建一个新的反射对象，并且放到reflectorMap里面缓存
+        this.reflector = reflectorFactory.findForClass(type);
     }
-    return findProperty(name);
-  }
 
-  public String[] getGetterNames() {
-    return reflector.getGetablePropertyNames();
-  }
-
-  public String[] getSetterNames() {
-    return reflector.getSetablePropertyNames();
-  }
-
-  public Class<?> getSetterType(String name) {
-    PropertyTokenizer prop = new PropertyTokenizer(name);
-    if (prop.hasNext()) {
-      MetaClass metaProp = metaClassForProperty(prop.getName());
-      return metaProp.getSetterType(prop.getChildren());
+    public static MetaClass forClass(Class<?> type, ReflectorFactory reflectorFactory) {
+        return new MetaClass(type, reflectorFactory);
     }
-    return reflector.getSetterType(prop.getName());
-  }
 
-  public Class<?> getGetterType(String name) {
-    PropertyTokenizer prop = new PropertyTokenizer(name);
-    if (prop.hasNext()) {
-      MetaClass metaProp = metaClassForProperty(prop);
-      return metaProp.getGetterType(prop.getChildren());
+    public MetaClass metaClassForProperty(String name) {
+        Class<?> propType = reflector.getGetterType(name);
+        return MetaClass.forClass(propType, reflectorFactory);
     }
-    // issue #506. Resolve the type inside a Collection Object
-    return getGetterType(prop);
-  }
 
-  private MetaClass metaClassForProperty(PropertyTokenizer prop) {
-    Class<?> propType = getGetterType(prop);
-    return MetaClass.forClass(propType, reflectorFactory);
-  }
+    public String findProperty(String name) {
+        StringBuilder prop = buildProperty(name, new StringBuilder());
+        return prop.length() > 0 ? prop.toString() : null;
+    }
 
-  private Class<?> getGetterType(PropertyTokenizer prop) {
-    Class<?> type = reflector.getGetterType(prop.getName());
-    if (prop.getIndex() != null && Collection.class.isAssignableFrom(type)) {
-      Type returnType = getGenericGetterType(prop.getName());
-      if (returnType instanceof ParameterizedType) {
-        Type[] actualTypeArguments = ((ParameterizedType) returnType).getActualTypeArguments();
-        if (actualTypeArguments != null && actualTypeArguments.length == 1) {
-          returnType = actualTypeArguments[0];
-          if (returnType instanceof Class) {
-            type = (Class<?>) returnType;
-          } else if (returnType instanceof ParameterizedType) {
-            type = (Class<?>) ((ParameterizedType) returnType).getRawType();
-          }
+    public String findProperty(String name, boolean useCamelCaseMapping) {
+        if (useCamelCaseMapping) {
+            name = name.replace("_", "");
         }
-      }
+        return findProperty(name);
     }
-    return type;
-  }
 
-  private Type getGenericGetterType(String propertyName) {
-    try {
-      Invoker invoker = reflector.getGetInvoker(propertyName);
-      if (invoker instanceof MethodInvoker) {
-        Field declaredMethod = MethodInvoker.class.getDeclaredField("method");
-        declaredMethod.setAccessible(true);
-        Method method = (Method) declaredMethod.get(invoker);
-        return TypeParameterResolver.resolveReturnType(method, reflector.getType());
-      }
-      if (invoker instanceof GetFieldInvoker) {
-        Field declaredField = GetFieldInvoker.class.getDeclaredField("field");
-        declaredField.setAccessible(true);
-        Field field = (Field) declaredField.get(invoker);
-        return TypeParameterResolver.resolveFieldType(field, reflector.getType());
-      }
-    } catch (NoSuchFieldException | IllegalAccessException e) {
-      // Ignored
+    public String[] getGetterNames() {
+        return reflector.getGetablePropertyNames();
     }
-    return null;
-  }
 
-  public boolean hasSetter(String name) {
-    PropertyTokenizer prop = new PropertyTokenizer(name);
-    if (!prop.hasNext()) {
-      return reflector.hasSetter(prop.getName());
+    public String[] getSetterNames() {
+        return reflector.getSetablePropertyNames();
     }
-    if (reflector.hasSetter(prop.getName())) {
-      MetaClass metaProp = metaClassForProperty(prop.getName());
-      return metaProp.hasSetter(prop.getChildren());
-    } else {
-      return false;
+
+    public Class<?> getSetterType(String name) {
+        PropertyTokenizer prop = new PropertyTokenizer(name);
+        if (prop.hasNext()) {
+            MetaClass metaProp = metaClassForProperty(prop.getName());
+            return metaProp.getSetterType(prop.getChildren());
+        }
+        return reflector.getSetterType(prop.getName());
     }
-  }
 
-  public boolean hasGetter(String name) {
-    PropertyTokenizer prop = new PropertyTokenizer(name);
-    if (!prop.hasNext()) {
-      return reflector.hasGetter(prop.getName());
+    public Class<?> getGetterType(String name) {
+        PropertyTokenizer prop = new PropertyTokenizer(name);
+        if (prop.hasNext()) {
+            MetaClass metaProp = metaClassForProperty(prop);
+            return metaProp.getGetterType(prop.getChildren());
+        }
+        // issue #506. Resolve the type inside a Collection Object
+        return getGetterType(prop);
     }
-    if (reflector.hasGetter(prop.getName())) {
-      MetaClass metaProp = metaClassForProperty(prop);
-      return metaProp.hasGetter(prop.getChildren());
-    } else {
-      return false;
+
+    private MetaClass metaClassForProperty(PropertyTokenizer prop) {
+        Class<?> propType = getGetterType(prop);
+        return MetaClass.forClass(propType, reflectorFactory);
     }
-  }
 
-  public Invoker getGetInvoker(String name) {
-    return reflector.getGetInvoker(name);
-  }
-
-  public Invoker getSetInvoker(String name) {
-    return reflector.getSetInvoker(name);
-  }
-
-  private StringBuilder buildProperty(String name, StringBuilder builder) {
-    PropertyTokenizer prop = new PropertyTokenizer(name);
-    if (prop.hasNext()) {
-      String propertyName = reflector.findPropertyName(prop.getName());
-      if (propertyName != null) {
-        builder.append(propertyName);
-        builder.append(".");
-        MetaClass metaProp = metaClassForProperty(propertyName);
-        metaProp.buildProperty(prop.getChildren(), builder);
-      }
-    } else {
-      String propertyName = reflector.findPropertyName(name);
-      if (propertyName != null) {
-        builder.append(propertyName);
-      }
+    private Class<?> getGetterType(PropertyTokenizer prop) {
+        Class<?> type = reflector.getGetterType(prop.getName());
+        if (prop.getIndex() != null && Collection.class.isAssignableFrom(type)) {
+            Type returnType = getGenericGetterType(prop.getName());
+            if (returnType instanceof ParameterizedType) {
+                Type[] actualTypeArguments = ((ParameterizedType) returnType).getActualTypeArguments();
+                if (actualTypeArguments != null && actualTypeArguments.length == 1) {
+                    returnType = actualTypeArguments[0];
+                    if (returnType instanceof Class) {
+                        type = (Class<?>) returnType;
+                    } else if (returnType instanceof ParameterizedType) {
+                        type = (Class<?>) ((ParameterizedType) returnType).getRawType();
+                    }
+                }
+            }
+        }
+        return type;
     }
-    return builder;
-  }
 
-  public boolean hasDefaultConstructor() {
-    return reflector.hasDefaultConstructor();
-  }
+    private Type getGenericGetterType(String propertyName) {
+        try {
+            Invoker invoker = reflector.getGetInvoker(propertyName);
+            if (invoker instanceof MethodInvoker) {
+                Field declaredMethod = MethodInvoker.class.getDeclaredField("method");
+                declaredMethod.setAccessible(true);
+                Method method = (Method) declaredMethod.get(invoker);
+                return TypeParameterResolver.resolveReturnType(method, reflector.getType());
+            }
+            if (invoker instanceof GetFieldInvoker) {
+                Field declaredField = GetFieldInvoker.class.getDeclaredField("field");
+                declaredField.setAccessible(true);
+                Field field = (Field) declaredField.get(invoker);
+                return TypeParameterResolver.resolveFieldType(field, reflector.getType());
+            }
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            // Ignored
+        }
+        return null;
+    }
+
+    public boolean hasSetter(String name) {
+        PropertyTokenizer prop = new PropertyTokenizer(name);
+        if (!prop.hasNext()) {
+            return reflector.hasSetter(prop.getName());
+        }
+        if (reflector.hasSetter(prop.getName())) {
+            MetaClass metaProp = metaClassForProperty(prop.getName());
+            return metaProp.hasSetter(prop.getChildren());
+        } else {
+            return false;
+        }
+    }
+
+    public boolean hasGetter(String name) {
+        PropertyTokenizer prop = new PropertyTokenizer(name);
+        if (!prop.hasNext()) {
+            return reflector.hasGetter(prop.getName());
+        }
+        if (reflector.hasGetter(prop.getName())) {
+            MetaClass metaProp = metaClassForProperty(prop);
+            return metaProp.hasGetter(prop.getChildren());
+        } else {
+            return false;
+        }
+    }
+
+    public Invoker getGetInvoker(String name) {
+        return reflector.getGetInvoker(name);
+    }
+
+    public Invoker getSetInvoker(String name) {
+        return reflector.getSetInvoker(name);
+    }
+
+    private StringBuilder buildProperty(String name, StringBuilder builder) {
+//        获取PropertyTokenizer对象来解析表达式
+        PropertyTokenizer prop = new PropertyTokenizer(name);
+//        判断是否还有子节点
+        if (prop.hasNext()) {
+            // 有子表达式，通过reflector反射拿到属性对应的属性名
+            String propertyName = reflector.findPropertyName(prop.getName());
+            if (propertyName != null) {
+//                因为这里判断的是还有没有子节点，所以这里要加 . 为下一个字节点做拼接准备
+                builder.append(propertyName);
+                builder.append(".");
+                MetaClass metaProp = metaClassForProperty(propertyName);
+                metaProp.buildProperty(prop.getChildren(), builder);
+            }
+        } else {
+//            这里没有子节点了，不用拼 . 直接找到之后拼到后面就ok
+            String propertyName = reflector.findPropertyName(name);
+            if (propertyName != null) {
+                builder.append(propertyName);
+            }
+        }
+        return builder;
+    }
+
+    public boolean hasDefaultConstructor() {
+        return reflector.hasDefaultConstructor();
+    }
 
 }
