@@ -103,7 +103,9 @@ public final class LogFactory {
 
   private static void setImplementation(Class<? extends Log> implClass) {
     try {
+        // 获取指定适配器的构造方法
       Constructor<? extends Log> candidate = implClass.getConstructor(String.class);
+//      实例化适配器
       Log log = candidate.newInstance(LogFactory.class.getName());
       if (log.isDebugEnabled()) {
         log.debug("Logging initialized using '" + implClass + "' adapter.");

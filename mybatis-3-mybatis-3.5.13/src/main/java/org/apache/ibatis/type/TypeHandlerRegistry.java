@@ -339,6 +339,7 @@ public final class TypeHandlerRegistry {
     public <T> void register(TypeHandler<T> typeHandler) {
         boolean mappedTypeFound = false;
         MappedTypes mappedTypes = typeHandler.getClass().getAnnotation(MappedTypes.class);
+//        通过读取注解来判断自己是不是应该去注册
         if (mappedTypes != null) {
             for (Class<?> handledType : mappedTypes.value()) {
                 register(handledType, typeHandler);
@@ -368,6 +369,7 @@ public final class TypeHandlerRegistry {
 
     private <T> void register(Type javaType, TypeHandler<? extends T> typeHandler) {
         MappedJdbcTypes mappedJdbcTypes = typeHandler.getClass().getAnnotation(MappedJdbcTypes.class);
+//        通过读取注解来判断自己是不是应该去注册
         if (mappedJdbcTypes != null) {
             for (JdbcType handledJdbcType : mappedJdbcTypes.value()) {
                 register(javaType, handledJdbcType, typeHandler);
@@ -395,13 +397,26 @@ public final class TypeHandlerRegistry {
 
 
 //    核心注册方法4
+//    能处理的Java类型,Jdbc类型以及TypeHandler对象.实现如下:
+    /**
+    *@Param: javaType 能处理的Java类型
+     * @Param: jdbcType Jdbc类型
+     * @Param: TypeHandler 映射方式
+    *@return:
+    *@Author: qjj
+    *@describe:
+    */
     private void register(Type javaType, JdbcType jdbcType, TypeHandler<?> handler) {
         if (javaType != null) {
+//            从java类型得到Jdbc类型的映射集合
             Map<JdbcType, TypeHandler<?>> map = typeHandlerMap.get(javaType);
+//            如果没有这个集合，则new一个
             if (map == null || map == NULL_TYPE_HANDLER_MAP) {
                 map = new HashMap<>();
             }
+//            把映射的Jdbc对象和映射处理函数放到Map里面
             map.put(jdbcType, handler);
+//            把map放到外层typeHandlerMap中，这是因为上面的java到jdbc可能会出现一对多的关系
             typeHandlerMap.put(javaType, map);
         }
         allTypeHandlersMap.put(handler.getClass(), handler);
@@ -416,6 +431,7 @@ public final class TypeHandlerRegistry {
     public void register(Class<?> typeHandlerClass) {
         boolean mappedTypeFound = false;
         MappedTypes mappedTypes = typeHandlerClass.getAnnotation(MappedTypes.class);
+//        通过读取注解来判断自己是不是应该去注册
         if (mappedTypes != null) {
             for (Class<?> javaTypeClass : mappedTypes.value()) {
                 register(javaTypeClass, typeHandlerClass);
@@ -467,6 +483,11 @@ public final class TypeHandlerRegistry {
 
     // scan
 
+    /**
+    *@Param: packageName 需要注册的包
+    *@Author: qjj
+    *@describe: 针对整个包中TypeHandler方法的注册
+    */
     public void register(String packageName) {
         ResolverUtil<Class<?>> resolverUtil = new ResolverUtil<>();
         resolverUtil.find(new ResolverUtil.IsA(TypeHandler.class), packageName);

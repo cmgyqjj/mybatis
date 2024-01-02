@@ -161,10 +161,12 @@ public class TypeAliasRegistry {
     }
     // issue #748
     String key = alias.toLowerCase(Locale.ENGLISH);
+//    检测别名有没有存在，如果存在，且不是同一个类，抛出异常
     if (typeAliases.containsKey(key) && typeAliases.get(key) != null && !typeAliases.get(key).equals(value)) {
       throw new TypeException(
           "The alias '" + alias + "' is already mapped to the value '" + typeAliases.get(key).getName() + "'.");
     }
+//    不存在则注册
     typeAliases.put(key, value);
   }
 
