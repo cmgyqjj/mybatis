@@ -25,211 +25,181 @@ import java.net.URL;
  */
 public class ClassLoaderWrapper {
 
-  ClassLoader defaultClassLoader;
-  ClassLoader systemClassLoader;
+    //    应用的默认类加载器
+    ClassLoader defaultClassLoader;
+    //    系统类加载器
+    ClassLoader systemClassLoader;
 
-  ClassLoaderWrapper() {
-    try {
-      systemClassLoader = ClassLoader.getSystemClassLoader();
-    } catch (SecurityException ignored) {
-      // AccessControlException on Google App Engine
-    }
-  }
-
-  /**
-   * Get a resource as a URL using the current class path
-   *
-   * @param resource
-   *          - the resource to locate
-   *
-   * @return the resource or null
-   */
-  public URL getResourceAsURL(String resource) {
-    return getResourceAsURL(resource, getClassLoaders(null));
-  }
-
-  /**
-   * Get a resource from the classpath, starting with a specific class loader
-   *
-   * @param resource
-   *          - the resource to find
-   * @param classLoader
-   *          - the first classloader to try
-   *
-   * @return the stream or null
-   */
-  public URL getResourceAsURL(String resource, ClassLoader classLoader) {
-    return getResourceAsURL(resource, getClassLoaders(classLoader));
-  }
-
-  /**
-   * Get a resource from the classpath
-   *
-   * @param resource
-   *          - the resource to find
-   *
-   * @return the stream or null
-   */
-  public InputStream getResourceAsStream(String resource) {
-    return getResourceAsStream(resource, getClassLoaders(null));
-  }
-
-  /**
-   * Get a resource from the classpath, starting with a specific class loader
-   *
-   * @param resource
-   *          - the resource to find
-   * @param classLoader
-   *          - the first class loader to try
-   *
-   * @return the stream or null
-   */
-  public InputStream getResourceAsStream(String resource, ClassLoader classLoader) {
-    return getResourceAsStream(resource, getClassLoaders(classLoader));
-  }
-
-  /**
-   * Find a class on the classpath (or die trying)
-   *
-   * @param name
-   *          - the class to look for
-   *
-   * @return - the class
-   *
-   * @throws ClassNotFoundException
-   *           Duh.
-   */
-  public Class<?> classForName(String name) throws ClassNotFoundException {
-    return classForName(name, getClassLoaders(null));
-  }
-
-  /**
-   * Find a class on the classpath, starting with a specific classloader (or die trying)
-   *
-   * @param name
-   *          - the class to look for
-   * @param classLoader
-   *          - the first classloader to try
-   *
-   * @return - the class
-   *
-   * @throws ClassNotFoundException
-   *           Duh.
-   */
-  public Class<?> classForName(String name, ClassLoader classLoader) throws ClassNotFoundException {
-    return classForName(name, getClassLoaders(classLoader));
-  }
-
-  /**
-   * Try to get a resource from a group of classloaders
-   *
-   * @param resource
-   *          - the resource to get
-   * @param classLoader
-   *          - the classloaders to examine
-   *
-   * @return the resource or null
-   */
-  InputStream getResourceAsStream(String resource, ClassLoader[] classLoader) {
-    for (ClassLoader cl : classLoader) {
-      if (null != cl) {
-
-        // try to find the resource as passed
-        InputStream returnValue = cl.getResourceAsStream(resource);
-
-        // now, some class loaders want this leading "/", so we'll add it and try again if we didn't find the resource
-        if (null == returnValue) {
-          returnValue = cl.getResourceAsStream("/" + resource);
-        }
-
-        if (null != returnValue) {
-          return returnValue;
-        }
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Get a resource as a URL using the current class path
-   *
-   * @param resource
-   *          - the resource to locate
-   * @param classLoader
-   *          - the class loaders to examine
-   *
-   * @return the resource or null
-   */
-  URL getResourceAsURL(String resource, ClassLoader[] classLoader) {
-
-    URL url;
-
-    for (ClassLoader cl : classLoader) {
-
-      if (null != cl) {
-
-        // look for the resource as passed in...
-        url = cl.getResource(resource);
-
-        // ...but some class loaders want this leading "/", so we'll add it
-        // and try again if we didn't find the resource
-        if (null == url) {
-          url = cl.getResource("/" + resource);
-        }
-
-        // "It's always in the last place I look for it!"
-        // ... because only an idiot would keep looking for it after finding it, so stop looking already.
-        if (null != url) {
-          return url;
-        }
-
-      }
-
-    }
-
-    // didn't find it anywhere.
-    return null;
-
-  }
-
-  /**
-   * Attempt to load a class from a group of classloaders
-   *
-   * @param name
-   *          - the class to load
-   * @param classLoader
-   *          - the group of classloaders to examine
-   *
-   * @return the class
-   *
-   * @throws ClassNotFoundException
-   *           - Remember the wisdom of Judge Smails: Well, the world needs ditch diggers, too.
-   */
-  Class<?> classForName(String name, ClassLoader[] classLoader) throws ClassNotFoundException {
-
-    for (ClassLoader cl : classLoader) {
-
-      if (null != cl) {
-
+    ClassLoaderWrapper() {
         try {
+//            初始化类加载器设置
+            systemClassLoader = ClassLoader.getSystemClassLoader();
+        } catch (SecurityException ignored) {
+            // AccessControlException on Google App Engine
+        }
+    }
 
-          return Class.forName(name, true, cl);
+    /**
+     * Get a resource as a URL using the current class path
+     *
+     * @param resource - the resource to locate
+     * @return the resource or null
+     */
+    public URL getResourceAsURL(String resource) {
+        return getResourceAsURL(resource, getClassLoaders(null));
+    }
 
-        } catch (ClassNotFoundException e) {
-          // we'll ignore this until all classloaders fail to locate the class
+    /**
+     * Get a resource from the classpath, starting with a specific class loader
+     *
+     * @param resource    - the resource to find
+     * @param classLoader - the first classloader to try
+     * @return the stream or null
+     */
+    public URL getResourceAsURL(String resource, ClassLoader classLoader) {
+        return getResourceAsURL(resource, getClassLoaders(classLoader));
+    }
+
+    /**
+     * Get a resource from the classpath
+     *
+     * @param resource - the resource to find
+     * @return the stream or null
+     */
+    public InputStream getResourceAsStream(String resource) {
+        return getResourceAsStream(resource, getClassLoaders(null));
+    }
+
+    /**
+     * Get a resource from the classpath, starting with a specific class loader
+     *
+     * @param resource    - the resource to find
+     * @param classLoader - the first class loader to try
+     * @return the stream or null
+     */
+    public InputStream getResourceAsStream(String resource, ClassLoader classLoader) {
+        return getResourceAsStream(resource, getClassLoaders(classLoader));
+    }
+
+    /**
+     * Find a class on the classpath (or die trying)
+     *
+     * @param name - the class to look for
+     * @return - the class
+     * @throws ClassNotFoundException Duh.
+     */
+    public Class<?> classForName(String name) throws ClassNotFoundException {
+        return classForName(name, getClassLoaders(null));
+    }
+
+    /**
+     * Find a class on the classpath, starting with a specific classloader (or die trying)
+     *
+     * @param name        - the class to look for
+     * @param classLoader - the first classloader to try
+     * @return - the class
+     * @throws ClassNotFoundException Duh.
+     */
+    public Class<?> classForName(String name, ClassLoader classLoader) throws ClassNotFoundException {
+        return classForName(name, getClassLoaders(classLoader));
+    }
+
+    /**
+     * Try to get a resource from a group of classloaders
+     *
+     * @param resource    - the resource to get
+     * @param classLoader - the classloaders to examine
+     * @return the resource or null
+     */
+    InputStream getResourceAsStream(String resource, ClassLoader[] classLoader) {
+        for (ClassLoader cl : classLoader) {
+            if (null != cl) {
+
+                // try to find the resource as passed
+                InputStream returnValue = cl.getResourceAsStream(resource);
+
+                // now, some class loaders want this leading "/", so we'll add it and try again if we didn't find the resource
+                if (null == returnValue) {
+                    returnValue = cl.getResourceAsStream("/" + resource);
+                }
+
+                if (null != returnValue) {
+                    return returnValue;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get a resource as a URL using the current class path
+     *
+     * @param resource    - the resource to locate
+     * @param classLoader - the class loaders to examine
+     * @return the resource or null
+     */
+    URL getResourceAsURL(String resource, ClassLoader[] classLoader) {
+
+        URL url;
+//        遍历ClassLoader树组
+        for (ClassLoader cl : classLoader) {
+//            判断是不是空
+            if (null != cl) {
+//                如果不是空尝试获取资源
+                url = cl.getResource(resource);
+                if (null == url) {
+//                    如果没获取到，尝试加上"/"再获取
+                    url = cl.getResource("/" + resource);
+                }
+//                如果查找到了资源，返回资源
+                if (null != url) {
+                    return url;
+                }
+            }
+        }
+//        没找到则返回null
+        return null;
+    }
+
+    /**
+     * Attempt to load a class from a group of classloaders
+     *
+     * @param name        - the class to load
+     * @param classLoader - the group of classloaders to examine
+     * @return the class
+     * @throws ClassNotFoundException - Remember the wisdom of Judge Smails: Well, the world needs ditch diggers, too.
+     */
+    Class<?> classForName(String name, ClassLoader[] classLoader) throws ClassNotFoundException {
+
+        for (ClassLoader cl : classLoader) {
+
+            if (null != cl) {
+
+                try {
+
+                    return Class.forName(name, true, cl);
+
+                } catch (ClassNotFoundException e) {
+                    // we'll ignore this until all classloaders fail to locate the class
+                }
+
+            }
+
         }
 
-      }
+        throw new ClassNotFoundException("Cannot find class: " + name);
 
     }
 
-    throw new ClassNotFoundException("Cannot find class: " + name);
-
-  }
-
-  ClassLoader[] getClassLoaders(ClassLoader classLoader) {
-    return new ClassLoader[] { classLoader, defaultClassLoader, Thread.currentThread().getContextClassLoader(),
-        getClass().getClassLoader(), systemClassLoader };
-  }
+//    getClassLoaders()方法返回ClassLoader[]，这代表了类加载器的使用顺序
+    ClassLoader[] getClassLoaders(ClassLoader classLoader) {
+        return new ClassLoader[]{
+            classLoader, //参数指定的类加载器
+            defaultClassLoader,//系统指定的默认加载器
+            Thread.currentThread().getContextClassLoader(),//当前线程绑定的类加载器
+            getClass().getClassLoader(),//加载当前类的类加载器
+            systemClassLoader//系统类加载器
+        };
+    }
 
 }
