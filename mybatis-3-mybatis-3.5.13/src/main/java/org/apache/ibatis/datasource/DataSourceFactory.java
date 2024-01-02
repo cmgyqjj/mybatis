@@ -24,7 +24,7 @@ import javax.sql.DataSource;
  */
 public interface DataSourceFactory {
 
-    //设置DataSource相关属性,紧跟在初始化之后
+    //设置DataSource相关属性,紧跟在初始化之后，这个方法应该是依据解析器模块解析出来的properties对象进行资源的载入
     void setProperties(Properties props);
 
     // 获取DataSource对象
