@@ -265,6 +265,7 @@ public class UnpooledDataSource implements DataSource {
 //                从前是用直接driverType.newInstance()来创建驱动的，但是这个方法已经被废弃了，所以用下面的方法来创建驱动
                 Driver driverInstance = (Driver) driverType.getDeclaredConstructor().newInstance();
                 DriverManager.registerDriver(new DriverProxy(driverInstance));
+//                添加到registeredDrivers里面
                 registeredDrivers.put(driver, driverInstance);
             } catch (Exception e) {
                 throw new SQLException("Error setting driver on UnpooledDataSource. Cause: " + e);
@@ -273,12 +274,15 @@ public class UnpooledDataSource implements DataSource {
     }
 
     private void configureConnection(Connection conn) throws SQLException {
+//        配置默认超时时间
         if (defaultNetworkTimeout != null) {
             conn.setNetworkTimeout(Executors.newSingleThreadExecutor(), defaultNetworkTimeout);
         }
+//        配置自动提交
         if (autoCommit != null && autoCommit != conn.getAutoCommit()) {
             conn.setAutoCommit(autoCommit);
         }
+//        配置默认事物隔离级别
         if (defaultTransactionIsolationLevel != null) {
             conn.setTransactionIsolation(defaultTransactionIsolationLevel);
         }
