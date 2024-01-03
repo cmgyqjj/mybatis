@@ -215,9 +215,17 @@ public class UnpooledDataSource implements DataSource {
         this.defaultNetworkTimeout = defaultNetworkTimeout;
     }
 
+    /**
+    *@Param:
+    *@return:
+    *@Author: qjj
+    *@describe: 根据用户名密码创建数据库连接
+    */
     private Connection doGetConnection(String username, String password) throws SQLException {
+//        配置信息
         Properties props = new Properties();
         if (driverProperties != null) {
+//            把驱动配置放到配置信息里面
             props.putAll(driverProperties);
         }
         if (username != null) {
@@ -226,27 +234,35 @@ public class UnpooledDataSource implements DataSource {
         if (password != null) {
             props.setProperty("password", password);
         }
+//        尝试获取连接
         return doGetConnection(props);
     }
 
     private Connection doGetConnection(Properties properties) throws SQLException {
+//        初始化驱动
         initializeDriver();
+//        尝试获取真正的连接
         Connection connection = DriverManager.getConnection(url, properties);
+//        配置数据库连接的autocommit和事务隔离级别
         configureConnection(connection);
         return connection;
     }
 
     private synchronized void initializeDriver() throws SQLException {
+//        判断一下是否已经注册过驱动了
         if (!registeredDrivers.containsKey(driver)) {
             Class<?> driverType;
             try {
+//                如果有类加载器，就用对应类加载器加载驱动
                 if (driverClassLoader != null) {
                     driverType = Class.forName(driver, true, driverClassLoader);
                 } else {
+//                    没有就用Resources类加载器加载驱动
                     driverType = Resources.classForName(driver);
                 }
                 // DriverManager requires the driver to be loaded via the system ClassLoader.
                 // https://www.kfu.com/~nsayer/Java/dyn-jdbc.html
+//                从前是用直接driverType.newInstance()来创建驱动的，但是这个方法已经被废弃了，所以用下面的方法来创建驱动
                 Driver driverInstance = (Driver) driverType.getDeclaredConstructor().newInstance();
                 DriverManager.registerDriver(new DriverProxy(driverInstance));
                 registeredDrivers.put(driver, driverInstance);
