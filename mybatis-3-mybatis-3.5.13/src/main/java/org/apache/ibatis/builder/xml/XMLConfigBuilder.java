@@ -202,13 +202,21 @@ public class XMLConfigBuilder extends BaseBuilder {
     }
 
     private void pluginElement(XNode parent) throws Exception {
+//        判断当前节点不为空
         if (parent != null) {
+//            便利其下的子节点，相当于便利下面的插件标签
             for (XNode child : parent.getChildren()) {
+//                获取插件的interceptor属性，这个属性是指定拦截器的全限定名
                 String interceptor = child.getStringAttribute("interceptor");
+//                获取插件的属性，这个属性是插件的配置信息
                 Properties properties = child.getChildrenAsProperties();
+//                创建插件实例，并且设置属性，这里是使用构造方法创建的
                 Interceptor interceptorInstance = (Interceptor) resolveClass(interceptor).getDeclaredConstructor()
                     .newInstance();
+//                设置插件的属性
                 interceptorInstance.setProperties(properties);
+//                将插件添加到configuration的interceptorChain中
+//                interceptorChain底层是一个List<Interceptor>
                 configuration.addInterceptor(interceptorInstance);
             }
         }
@@ -216,10 +224,15 @@ public class XMLConfigBuilder extends BaseBuilder {
 
     private void objectFactoryElement(XNode context) throws Exception {
         if (context != null) {
+//            获取objectFactory的type属性，这个属性是指定ObjectFactory的实现类的全限定名
             String type = context.getStringAttribute("type");
+//            获取objectFactory的子节点，这些子节点的属性会被设置到ObjectFactory中
             Properties properties = context.getChildrenAsProperties();
+//            通过构造器的方式创建ObjectFactory实例，并且设置属性
             ObjectFactory factory = (ObjectFactory) resolveClass(type).getDeclaredConstructor().newInstance();
+//            设置ObjectFactory的属性
             factory.setProperties(properties);
+//            设置configuration的objectFactory属性
             configuration.setObjectFactory(factory);
         }
     }
@@ -308,15 +321,36 @@ public class XMLConfigBuilder extends BaseBuilder {
 
     private void environmentsElement(XNode context) throws Exception {
         if (context != null) {
+//            <environments default="development">
+//                <environment id="development">
+//                  <transactionManager type="JDBC">
+//                    <property name="" value=""/>
+//                  </transactionManager>
+//                  <dataSource type="UNPOOLED">
+//                    <property name="driver" value="${driver}"/>
+//                    <property name="url" value="${url}"/>
+//                    <property name="username" value="${username}"/>
+//                    <property name="password" value="${password}"/>
+//                  </dataSource>
+//                </environment>
+//              </environments>
             if (environment == null) {
+//                读一下看看有没有配置default属性作为默认环境
                 environment = context.getStringAttribute("default");
             }
+//            遍历environment节点
             for (XNode child : context.getChildren()) {
+//                获取environment节点的id属性，相当于是名字吧
                 String id = child.getStringAttribute("id");
+//                判断是否是指定的环境
                 if (isSpecifiedEnvironment(id)) {
+//                    解析transactionManager节点
                     TransactionFactory txFactory = transactionManagerElement(child.evalNode("transactionManager"));
+//                    解析dataSource节点
                     DataSourceFactory dsFactory = dataSourceElement(child.evalNode("dataSource"));
                     DataSource dataSource = dsFactory.getDataSource();
+//                    创建Environment.Builder对象，并且设置id、transactionFactory、dataSource
+//                    链式调用
                     Environment.Builder environmentBuilder = new Environment.Builder(id).transactionFactory(txFactory)
                         .dataSource(dataSource);
                     configuration.setEnvironment(environmentBuilder.build());
@@ -327,17 +361,22 @@ public class XMLConfigBuilder extends BaseBuilder {
     }
 
     private void databaseIdProviderElement(XNode context) throws Exception {
+//          <databaseIdProvider type="DB_VENDOR">
+//            <property name="Apache Derby" value="derby"/>
+//          </databaseIdProvider>
         DatabaseIdProvider databaseIdProvider = null;
         if (context != null) {
             String type = context.getStringAttribute("type");
-            // awful patch to keep backward compatibility
+            // 为了保证兼容性修改type的值
             if ("VENDOR".equals(type)) {
                 type = "DB_VENDOR";
             }
+//            获取子节点的属性，然后通过构造方法实例化，并且赋值属性
             Properties properties = context.getChildrenAsProperties();
             databaseIdProvider = (DatabaseIdProvider) resolveClass(type).getDeclaredConstructor().newInstance();
             databaseIdProvider.setProperties(properties);
         }
+//        把databaseId记录到configuration的databaseId字段中
         Environment environment = configuration.getEnvironment();
         if (environment != null && databaseIdProvider != null) {
             String databaseId = databaseIdProvider.getDatabaseId(environment.getDataSource());
@@ -395,16 +434,27 @@ public class XMLConfigBuilder extends BaseBuilder {
     }
 
     private void mapperElement(XNode parent) throws Exception {
+//          <mappers>
+//            <mapper resource="org/apache/ibatis/builder/xsd/BlogMapper.xml"/>
+//            <mapper url="file:./src/test/resources/org/apache/ibatis/builder/xsd/NestedBlogMapper.xml"/>
+//            <mapper class="org.apache.ibatis.builder.xsd.CachedAuthorMapper"/>
+//            <package name="org.apache.ibatis.builder.mapper"/>
+//          </mappers>
         if (parent != null) {
+//            遍历<mappers>的子节点
             for (XNode child : parent.getChildren()) {
+//                判断是不是有一个<package>节点，如果有的话，就扫描指定的包
                 if ("package".equals(child.getName())) {
                     String mapperPackage = child.getStringAttribute("name");
                     configuration.addMappers(mapperPackage);
                 } else {
+//                    获取<mapper>节点的resource、url、class属性
                     String resource = child.getStringAttribute("resource");
                     String url = child.getStringAttribute("url");
                     String mapperClass = child.getStringAttribute("class");
                     if (resource != null && url == null && mapperClass == null) {
+//                        如果resource不为空，url和mapperClass为空，那么就是通过resource加载Mapper
+//                        Resources.getResourceAsStream
                         ErrorContext.instance().resource(resource);
                         try (InputStream inputStream = Resources.getResourceAsStream(resource)) {
                             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, resource,
@@ -412,6 +462,7 @@ public class XMLConfigBuilder extends BaseBuilder {
                             mapperParser.parse();
                         }
                     } else if (resource == null && url != null && mapperClass == null) {
+//                        如果resource为空，url不为空，mapperClass为空，那么就是通过url加载Mapper
                         ErrorContext.instance().resource(url);
                         try (InputStream inputStream = Resources.getUrlAsStream(url)) {
                             XMLMapperBuilder mapperParser = new XMLMapperBuilder(inputStream, configuration, url,
@@ -419,6 +470,7 @@ public class XMLConfigBuilder extends BaseBuilder {
                             mapperParser.parse();
                         }
                     } else if (resource == null && url == null && mapperClass != null) {
+//                        如果resource为空，url为空，mapperClass不为空，那么就是通过mapperClass加载Mapper
                         Class<?> mapperInterface = Resources.classForName(mapperClass);
                         configuration.addMapper(mapperInterface);
                     } else {
