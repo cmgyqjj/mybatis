@@ -23,6 +23,7 @@ package org.apache.ibatis.mapping;
  */
 public interface SqlSource {
 
-  BoundSql getBoundSql(Object parameterObject);
+//    通过解析得到BoundSql对象，其中封装了 ？占位符的SQL以及参数信息
+    BoundSql getBoundSql(Object parameterObject);
 
 }
