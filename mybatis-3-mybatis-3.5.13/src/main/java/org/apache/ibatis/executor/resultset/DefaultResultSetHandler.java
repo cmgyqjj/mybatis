@@ -302,16 +302,21 @@ public class DefaultResultSetHandler implements ResultSetHandler {
                                  ResultMapping parentMapping) throws SQLException {
         try {
             if (parentMapping != null) {
+//                处理多结果集中的嵌套情况
                 handleRowValues(rsw, resultMap, null, RowBounds.DEFAULT, parentMapping);
             } else if (resultHandler == null) {
+//                用户没有指定处理映射的ResultHandler则使用DefaultResultHandler作为默认的
                 DefaultResultHandler defaultResultHandler = new DefaultResultHandler(objectFactory);
+//                对ResultSet进行映射，并且把结果存到defaultResultHandler对象中
                 handleRowValues(rsw, resultMap, defaultResultHandler, rowBounds, null);
+//                把defaultResultHandler中的对象转存到multipleResults中
                 multipleResults.add(defaultResultHandler.getResultList());
             } else {
+//                如果有指定处理映射的ResultHandler，则用指定的
                 handleRowValues(rsw, resultMap, resultHandler, rowBounds, null);
             }
         } finally {
-            // issue #228 (close resultsets)
+//            关闭结果集
             closeResultSet(rsw.getResultSet());
         }
     }
